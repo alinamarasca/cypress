@@ -1,8 +1,7 @@
-// let windowErrorSpy;
+/// <reference types="cypress"/>
 
-// Cypress.on("window:before:load", win => {
-//   windowErrorSpy = cy.spy(win.console, "error");
-// });
+import newPet from "../fixtures/newPet.json";
+import updatedPet from "../fixtures/newPet.json";
 
 describe("test CRUD", () => {
   describe("creates a new pet", () => {
@@ -18,20 +17,10 @@ describe("test CRUD", () => {
     it("successfully creates a new pet if valid JSON", () => {
       cy.visit("/addPet");
       cy.openInput();
-      cy.get("textarea").clear().type(`{leftArrow}  "id": 101,
-      "category": {
-        "id": 0,
-        "name": "string"
-      },
-      "name": "piggie",
-      "photoUrls": ["string"],
-      "tags": [
-        {
-          "id": 0,
-          "name": "string"
-        }
-      ],
-      "status": "available"`);
+      cy.get("textarea").type("{selectall}");
+      cy.get("textarea").type(`${JSON.stringify(newPet.data)}`, {
+        parseSpecialCharSequences: false
+      });
 
       cy.intercept({
         method: "POST",
@@ -81,11 +70,11 @@ describe("test CRUD", () => {
     it("successfully finds pet by id", () => {
       cy.visit("/getPetById");
       cy.openInput();
-      cy.get("input[placeholder='petId']").type("101");
+      cy.get("input[placeholder='petId']").type(newPet.data.id);
 
       cy.intercept({
         method: "GET",
-        url: "https://petstore.swagger.io/v2/pet/101"
+        url: `https://petstore.swagger.io/v2/pet/${newPet.data.id}`
       }).as("pet-id");
 
       cy.contains("Execute").click();
@@ -96,7 +85,7 @@ describe("test CRUD", () => {
         expect(response.statusCode).to.eq(200);
         expect(response.statusMessage).to.eq("OK");
         expect(state).to.eq("Complete");
-        expect(response.body.id).to.eq(101);
+        expect(response.body.id).to.eq(newPet.data.id);
       });
     });
 
@@ -137,26 +126,10 @@ describe("test CRUD", () => {
     it("successfully updates a pet", () => {
       cy.visit("/updatePet");
       cy.openInput();
-      cy.get("textarea")
-        .clear()
-        .type(
-          `{leftArrow} "id": 101,
-          "category": {
-            "id": 0,
-            "name": "string"
-          },
-          "name": "ignited-piggie",
-          "photoUrls": [
-            "string"
-          ],
-          "tags": [
-            {
-              "id": 0,
-              "name": "string"
-            }
-          ],
-          "status": "available"`
-        );
+      cy.get("textarea").type("{selectall}");
+      cy.get("textarea").type(`${JSON.stringify(updatedPet.data)}`, {
+        parseSpecialCharSequences: false
+      });
 
       cy.intercept({
         method: "PUT",
@@ -182,7 +155,7 @@ describe("test CRUD", () => {
       cy.checkErrorMessage("Parameter string value must be valid JSON");
     });
 
-    //   // again, I would check in with documentation, but will assume for now en error should have been shown => TEST WILL NOT PASS
+    // again, I would check in with documentation, but will assume for now en error should have been shown => TEST WILL NOT PASS
     it("shows error if empty JSON", () => {
       cy.visit("/updatePet");
       cy.openInput();
@@ -196,11 +169,11 @@ describe("test CRUD", () => {
     it("successfully deletes pet by id", () => {
       cy.visit("/deletePet");
       cy.openInput();
-      cy.get("input[placeholder='petId']").type("101");
+      cy.get("input[placeholder='petId']").type(newPet.data.id);
 
       cy.intercept({
         method: "DELETE",
-        url: "https://petstore.swagger.io/v2/pet/101"
+        url: `https://petstore.swagger.io/v2/pet/${newPet.data.id}`
       }).as("pet-id");
       cy.contains("Execute").click();
       cy.getServerResponse(200);
@@ -209,18 +182,18 @@ describe("test CRUD", () => {
         expect(request.method).to.equal("DELETE");
         expect(response.statusCode).to.eq(200);
         expect(response.statusMessage).to.eq("OK");
-        expect(response.body.message).to.eq("101");
+        expect(response.body.message).to.eq(`${newPet.data.id}`);
       });
     });
 
     it("returns 404 when removed pet is requested", () => {
       cy.visit("/getPetById");
       cy.openInput();
-      cy.get("input[placeholder='petId']").type("101");
+      cy.get("input[placeholder='petId']").type(newPet.data.id);
 
       cy.intercept({
         method: "GET",
-        url: "https://petstore.swagger.io/v2/pet/101"
+        url: `https://petstore.swagger.io/v2/pet/${newPet.data.id}`
       }).as("pet-id");
 
       cy.contains("Execute").click();
