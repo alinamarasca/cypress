@@ -14,3 +14,10 @@ Cypress.Commands.add("openInput", () => {
 Cypress.Commands.add("checkErrorMessage", errorMessage => {
   cy.get(".validation-errors").find("ul").find("li").contains(errorMessage);
 });
+
+Cypress.Commands.add("countApiCalls", (alias, expectedAmount) => {
+  cy.wait(2000);
+  cy.get(`@${alias}.all`).then(interceptions => {
+    expect(interceptions).to.have.length(expectedAmount);
+  });
+});
