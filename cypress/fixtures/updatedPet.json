@@ -1,16 +1,18 @@
 {
-  "id": 101,
-  "category": {
-    "id": 0,
-    "name": "string"
-  },
-  "name": "ignited-piggie",
-  "photoUrls": ["string"],
-  "tags": [
-    {
+  "data": {
+    "id": 101,
+    "category": {
       "id": 0,
       "name": "string"
-    }
-  ],
-  "status": "available"
+    },
+    "name": "ignited-piggie",
+    "photoUrls": ["string"],
+    "tags": [
+      {
+        "id": 0,
+        "name": "string"
+      }
+    ],
+    "status": "available"
+  }
 }
