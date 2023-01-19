@@ -11,6 +11,10 @@ Cypress.Commands.add("openInput", () => {
   cy.contains("Try it out").click();
 });
 
+Cypress.Commands.add("submitData", () => {
+  cy.contains("Execute").click();
+});
+
 Cypress.Commands.add("checkErrorMessage", errorMessage => {
   cy.get(".validation-errors").find("ul").find("li").contains(errorMessage);
 });

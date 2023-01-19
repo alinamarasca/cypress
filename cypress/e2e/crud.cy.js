@@ -3,38 +3,32 @@
 import newPet from "../fixtures/newPet.json";
 import updatedPet from "../fixtures/newPet.json";
 
-describe("test CRUD", () => {
-  describe("creates a new pet", () => {
-    it("shows error if invalid JSON", () => {
+describe("user can create, find, update, delete a pet", () => {
+  describe("user can create a new pet", () => {
+    beforeEach(() => {
       cy.visit("/addPet");
       cy.openInput();
-      cy.get("textarea").clear().type(`{leftArrow} invalid json`);
 
       cy.intercept({
         method: "POST",
         url: "https://petstore.swagger.io/v2/pet"
       }).as("new-pet");
+    });
 
-      cy.contains("Execute").click();
+    it("shows error if invalid JSON", () => {
+      cy.get("textarea").clear().type(`{leftArrow} invalid json`);
+      cy.submitData();
       cy.checkErrorMessage("Parameter string value must be valid JSON");
 
       cy.countApiCalls("new-pet", 0);
     });
 
-    it("successfully creates a new pet if valid JSON", () => {
-      cy.visit("/addPet");
-      cy.openInput();
+    it("shows server's response if successfully created a pet", () => {
       cy.get("textarea").type("{selectall}");
       cy.get("textarea").type(`${JSON.stringify(newPet.data)}`, {
         parseSpecialCharSequences: false
       });
-
-      cy.intercept({
-        method: "POST",
-        url: "https://petstore.swagger.io/v2/pet"
-      }).as("new-pet");
-
-      cy.contains("Execute").click();
+      cy.submitData();
       cy.getServerResponse(200);
 
       cy.wait("@new-pet").then(({ response, request, state }) => {
@@ -52,16 +46,8 @@ describe("test CRUD", () => {
     // to learn which behavior is expected => write test accordingly: to check if it creates a pet or shows error
     // for now, I will assume it had to show error message => TEST WILL NOT PASS
     it("shows error if empty JSON", () => {
-      cy.visit("/addPet");
-      // however API call happens, so I will check it, otherwise I would check that it did NOT happen
-      cy.intercept({
-        method: "POST",
-        url: "https://petstore.swagger.io/v2/pet"
-      }).as("new-pet");
-
-      cy.openInput();
       cy.get("textarea").clear().type(`{leftArrow}`);
-      cy.contains("Execute").click();
+      cy.submitData();
 
       cy.wait("@new-pet").then(({ response, request, state }) => {
         expect(request.method).to.equal("POST");
@@ -75,18 +61,20 @@ describe("test CRUD", () => {
     });
   });
 
-  describe("read a new pet", () => {
-    it("successfully finds pet by id", () => {
+  describe("user can find a pet by id", () => {
+    beforeEach(() => {
       cy.visit("/getPetById");
       cy.openInput();
-      cy.get("input[placeholder='petId']").type(newPet.data.id);
+    });
 
+    it("finds pet by id", () => {
       cy.intercept({
         method: "GET",
         url: `https://petstore.swagger.io/v2/pet/${newPet.data.id}`
       }).as("pet-id");
 
-      cy.contains("Execute").click();
+      cy.get("input[placeholder='petId']").type(newPet.data.id);
+      cy.submitData();
       cy.getServerResponse(200);
 
       cy.wait("@pet-id").then(({ response, request, state }) => {
@@ -99,15 +87,12 @@ describe("test CRUD", () => {
     });
 
     it("shows error if no id provided", () => {
-      cy.visit("/getPetById");
-      cy.openInput();
-      cy.get("input[placeholder='petId']").invoke("val", "");
-
       cy.intercept({
         method: "GET",
         url: "https://petstore.swagger.io/v2/pet/"
       }).as("pet-id");
 
+      cy.get("input[placeholder='petId']").invoke("val", "");
       cy.contains("Execute").click();
       cy.checkErrorMessage("Required field is not provided");
 
@@ -116,16 +101,13 @@ describe("test CRUD", () => {
 
     // again, I would check in with documentation, but will assume for now en error should have been shown => TEST WILL NOT PASS
     it("shows error if wrong/non existent id provided", () => {
-      cy.visit("/getPetById");
-      cy.openInput();
-      cy.get("input[placeholder='petId']").type(0);
-
       cy.intercept({
         method: "GET",
         url: "https://petstore.swagger.io/v2/pet/0"
       }).as("pet-id");
 
-      cy.contains("Execute").click();
+      cy.get("input[placeholder='petId']").type(0);
+      cy.submitData();
 
       cy.wait("@pet-id").then(({ response, request }) => {
         expect(request.method).to.equal("GET");
@@ -137,10 +119,13 @@ describe("test CRUD", () => {
     });
   });
 
-  describe("updates a pet", () => {
-    it("successfully updates a pet", () => {
+  describe("user can update a pet", () => {
+    beforeEach(() => {
       cy.visit("/updatePet");
       cy.openInput();
+    });
+
+    it("successfully updates a pet", () => {
       cy.get("textarea").type("{selectall}");
       cy.get("textarea").type(`${JSON.stringify(updatedPet.data)}`, {
         parseSpecialCharSequences: false
@@ -151,7 +136,7 @@ describe("test CRUD", () => {
         url: "https://petstore.swagger.io/v2/pet"
       }).as("upd-pet");
 
-      cy.contains("Execute").click();
+      cy.submitData();
       cy.getServerResponse(200);
 
       cy.wait("@upd-pet").then(({ response, request, state }) => {
@@ -163,19 +148,15 @@ describe("test CRUD", () => {
     });
 
     it("shows error if invalid JSON", () => {
-      cy.visit("/updatePet");
-      cy.openInput();
       cy.get("textarea").clear().type(`{leftArrow} invalid json`);
-      cy.contains("Execute").click();
+      cy.submitData();
       cy.checkErrorMessage("Parameter string value must be valid JSON");
     });
 
     // again, I would check in with documentation, but will assume for now en error should have been shown => TEST WILL NOT PASS
     it("shows error if empty JSON", () => {
-      cy.visit("/updatePet");
-      cy.openInput();
       cy.get("textarea").clear().type(`{leftArrow}`);
-      cy.contains("Execute").click();
+      cy.submitData();
       cy.checkErrorMessage("Required data is not provided");
     });
   });
@@ -184,59 +165,73 @@ describe("test CRUD", () => {
     it("successfully deletes pet by id", () => {
       cy.visit("/deletePet");
       cy.openInput();
-      cy.get("input[placeholder='petId']").type(newPet.data.id);
-
       cy.intercept({
         method: "DELETE",
         url: `https://petstore.swagger.io/v2/pet/${newPet.data.id}`
       }).as("pet-id");
-      cy.contains("Execute").click();
+
+      cy.get("input[placeholder='petId']").type(newPet.data.id);
+      cy.submitData();
       cy.getServerResponse(200);
 
       cy.wait("@pet-id").then(({ response, request }) => {
-        cy.log("HERE", response);
         expect(request.method).to.equal("DELETE");
         expect(response.statusCode).to.eq(200);
         expect(response.statusMessage).to.eq("OK");
-        // expect(response.body.message).to.eq();
       });
     });
 
-    it("returns 404 when removed pet is requested", () => {
+    it("checks that pet with given id is not returned", () => {
       cy.visit("/getPetById");
       cy.openInput();
-      cy.get("input[placeholder='petId']").type(newPet.data.id);
 
       cy.intercept({
         method: "GET",
         url: `https://petstore.swagger.io/v2/pet/${newPet.data.id}`
       }).as("pet-id");
 
-      cy.contains("Execute").click();
-
+      cy.get("input[placeholder='petId']").type(newPet.data.id);
+      cy.submitData();
       cy.wait("@pet-id").then(({ response, request }) => {
         expect(request.method).to.equal("GET");
         expect(response.statusCode).to.eq(404);
         expect(response.statusMessage).to.eq("Not Found");
       });
-
       cy.getServerResponse(404);
     });
 
-    it("shows error if no id is provided", () => {
-      cy.visit("/deletePet");
-      cy.openInput();
-      cy.get("input[placeholder='petId']").invoke("val", "");
+    describe("if wrong id is provided", () => {
+      it("shows error if no id", () => {
+        cy.visit("/deletePet");
+        cy.openInput();
+        cy.get("input[placeholder='petId']").invoke("val", "");
 
-      cy.intercept({
-        method: "GET",
-        url: `https://petstore.swagger.io/v2/pet/`
-      }).as("pet-id");
+        cy.intercept({
+          method: "DELETE",
+          url: `https://petstore.swagger.io/v2/pet/`
+        }).as("pet-id");
 
-      cy.contains("Execute").click();
-      cy.checkErrorMessage("Required field is not provided");
+        cy.submitData();
+        cy.checkErrorMessage("Required field is not provided");
 
-      cy.countApiCalls("pet-id", 0);
+        cy.countApiCalls("pet-id", 0);
+      });
+
+      it("shows error if id is not an integer", () => {
+        cy.visit("/deletePet");
+        cy.openInput();
+        cy.get("input[placeholder='petId']").type("_char23-");
+
+        cy.intercept({
+          method: "DELETE",
+          url: `https://petstore.swagger.io/v2/pet/`
+        }).as("pet-id");
+
+        cy.submitData();
+        cy.checkErrorMessage("Value must be an integer");
+
+        cy.countApiCalls("pet-id", 0);
+      });
     });
   });
 });
